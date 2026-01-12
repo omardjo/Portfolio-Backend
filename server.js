@@ -5,8 +5,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- FIXED CORS CONFIGURATION ---
-// This allows your frontend (index.html) to talk to this server from anywhere
+// --- CORS CONFIGURATION ---
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'OPTIONS'], 
@@ -15,7 +14,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// --- YOUR FULL CV CONTEXT RESTORED ---
+// --- CV CONTEXT ---
 const cvContext = `You are an AI assistant for Omar Djebbi's professional portfolio.
 
 PERSONAL DETAILS:
@@ -161,6 +160,8 @@ app.post('/api/chat', async (req, res) => {
             return res.status(400).json({ error: 'Message is required' });
         }
 
+        console.log("Sending request to Perplexity with model: sonar-pro");
+
         // --- IMPROVED FETCH REQUEST ---
         const response = await fetch('https://api.perplexity.ai/chat/completions', {
             method: 'POST',
@@ -169,13 +170,12 @@ app.post('/api/chat', async (req, res) => {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'llama-3.1-sonar-small-128k-online',
+                model: 'sonar-pro', // <--- FIXED: Updated Model Name
                 messages: [
                     { role: 'system', content: cvContext },
                     { role: 'user', content: message }
                 ],
                 temperature: 0.7
-                // max_tokens is optional, removed to let API decide optimal length
             })
         });
 
