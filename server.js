@@ -5,11 +5,17 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// --- FIXED CORS CONFIGURATION ---
+// This allows your frontend (index.html) to talk to this server from anywhere
+app.use(cors({
+    origin: '*', 
+    methods: ['GET', 'POST', 'OPTIONS'], 
+    allowedHeaders: ['Content-Type', 'Authorization'] 
+}));
+
 app.use(express.json());
 
-// Comprehensive CV Context
+// --- YOUR FULL CV CONTEXT RESTORED ---
 const cvContext = `You are an AI assistant for Omar Djebbi's professional portfolio.
 
 PERSONAL DETAILS:
@@ -145,11 +151,17 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
         
+        // --- CHECK IF KEY EXISTS ---
+        if (!process.env.PERPLEXITY_API_KEY) {
+            console.error('ERROR: Perplexity API Key is missing in environment variables.');
+            return res.status(500).json({ error: 'Server configuration error: API Key missing' });
+        }
+
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
         }
 
-        // Call Perplexity API
+        // --- IMPROVED FETCH REQUEST ---
         const response = await fetch('https://api.perplexity.ai/chat/completions', {
             method: 'POST',
             headers: {
@@ -162,15 +174,15 @@ app.post('/api/chat', async (req, res) => {
                     { role: 'system', content: cvContext },
                     { role: 'user', content: message }
                 ],
-                temperature: 0.7,
-                max_tokens: 500
+                temperature: 0.7
+                // max_tokens is optional, removed to let API decide optimal length
             })
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('Perplexity API Error:', errorText);
-            throw new Error(`API request failed: ${response.status}`);
+            console.error('Perplexity API Error:', response.status, errorText);
+            throw new Error(`API request failed: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
@@ -185,11 +197,13 @@ app.post('/api/chat', async (req, res) => {
         }
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error processing chat request:', error);
+        
+        // Fallback response if API fails
         res.status(500).json({ 
             success: false, 
             error: 'Failed to process request',
-            message: "I'm having trouble connecting. Omar Djebbi is a Software Engineer from ESPRIT with 2 years of experience in Flutter and Node.js. He has worked at MAVISION on Business Central integrations and built multiple mobile applications. What would you like to know specifically?"
+            message: "I'm having trouble connecting to the AI brain right now. However, I can tell you that Omar is a Software Engineer from ESPRIT with expertise in Flutter and Node.js. He is currently working on a React Native e-learning app. Please try asking again in a moment."
         });
     }
 });
